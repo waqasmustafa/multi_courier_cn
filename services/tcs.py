@@ -55,7 +55,8 @@ class TcsService(BaseCourierService):
             'POST', url, shipment=shipment, action='book', headers=self._headers(), json_body=body)
         if not resp.ok:
             raise CourierAPIError(_('TCS booking failed: %s') % data)
-        tracking_number = self._extract(data, ['trackingNumber', 'cnNumber', 'consignmentNumber', 'cn_no'])
+        tracking_number = self._extract(
+            data, ['consignmentnumber', 'trackingNumber', 'cnNumber', 'consignmentNumber', 'cn_no'])
         if not tracking_number:
             raise CourierAPIError(
                 _('TCS did not return a recognisable tracking number. Check the API log '
@@ -65,7 +66,7 @@ class TcsService(BaseCourierService):
 
     def cancel(self, tracking_number, shipment=None):
         url = '%s/ecom/api/booking/cancel' % self.carrier.tcs_api_url.rstrip('/')
-        body = {'accesstoken': self.carrier.tcs_access_token, 'trackingNumber': tracking_number}
+        body = {'accesstoken': self.carrier.tcs_access_token, 'consignmentnumber': tracking_number}
         resp, data = self._request(
             'POST', url, shipment=shipment, action='cancel', headers=self._headers(), json_body=body)
         if not resp.ok:
@@ -76,7 +77,7 @@ class TcsService(BaseCourierService):
         if not self.carrier.tcs_bearer_token or not self.carrier.tcs_access_token:
             return False, _('TCS bearer token / access token is not configured.')
         url = '%s/ecom/api/booking/cancel' % self.carrier.tcs_api_url.rstrip('/')
-        body = {'accesstoken': self.carrier.tcs_access_token, 'trackingNumber': 'TEST-CONNECTION'}
+        body = {'accesstoken': self.carrier.tcs_access_token, 'consignmentnumber': 'TEST-CONNECTION'}
         try:
             resp, data = self._request('POST', url, action='test', headers=self._headers(), json_body=body)
         except CourierAPIError as e:
