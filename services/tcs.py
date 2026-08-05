@@ -55,7 +55,7 @@ class TcsService(BaseCourierService):
             'tcsaccount': self.carrier.tcs_account_number,
             'costcentercode': self.carrier.tcs_cost_center,
             'clientid': self.carrier.tcs_client_id,
-            'countrycode': 'PAK',
+            'countrycode': 'PK',
             'countryname': company.country_id.name or 'Pakistan',
         }
 
