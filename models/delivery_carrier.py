@@ -25,7 +25,8 @@ class DeliveryCarrier(models.Model):
     tcs_access_token = fields.Char(string='TCS Access Token', password=True)
     tcs_cost_center = fields.Char(string='TCS Cost Center')
     tcs_client_id = fields.Char(string='TCS Client ID')
-    tcs_account_number = fields.Char(string='TCS Account Number')
+    tcs_account_number = fields.Char(string='TCS Account Number', help='This is the "tcsaccount" value TCS gave you (e.g. LGC1251).')
+    tcs_service_code = fields.Char(string='TCS Service Code', help='Provided by TCS for your account, required by the booking API (shipmentinfo.servicecode).')
     tcs_api_url = fields.Char(string='TCS API URL', default='https://ociconnect.tcscourier.com')
 
     # ZoomCOD

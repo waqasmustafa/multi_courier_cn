@@ -33,31 +33,39 @@ class TcsService(BaseCourierService):
                 return self._extract(nested, keys)
         return None
 
+    def _shipper_info(self):
+        company = self.carrier.env.company
+        return {
+            'shippername': company.name or '',
+            'mobile': company.phone or company.mobile or '',
+            'address1': company.street or '',
+            'cityname': company.city or '',
+            'tcsaccount': self.carrier.tcs_account_number,
+            'costcentercode': self.carrier.tcs_cost_center,
+            'clientid': self.carrier.tcs_client_id,
+            'countrycode': company.country_id.code or 'PK',
+            'countryname': company.country_id.name or 'Pakistan',
+        }
+
     def book(self, payload, shipment=None):
         order = payload['order']
         url = '%s/ecom/api/booking/create' % self.carrier.tcs_api_url.rstrip('/')
-        # TCS expects three nested objects rather than flat fields - confirmed from a
-        # live "field is required" error response. Sub-field names inside each object
-        # are a best-guess following TCS's observed lowercase-no-camelCase convention
-        # (e.g. consignmentnumber, accesstoken) and may need one more round of
-        # correction from the next live error response.
+        # Field names below were confirmed field-by-field from TCS's own validation
+        # error responses (see courier.shipment > API Logs for the raw exchanges).
         body = {
             'accesstoken': self.carrier.tcs_access_token,
-            'shipperinfo': {
-                'accountnumber': self.carrier.tcs_account_number,
-                'costcentercode': self.carrier.tcs_cost_center,
-                'clientid': self.carrier.tcs_client_id,
-            },
+            'shipperinfo': self._shipper_info(),
             'consigneeinfo': {
-                'consigneename': payload['customer_name'],
-                'consigneephone': payload['phone'],
-                'consigneeaddress': payload['address'],
-                'consigneecity': payload['city'],
+                'firstname': payload['customer_name'] or 'Customer',
+                'mobile': payload['phone'],
+                'address1': payload['address'],
+                'cityname': payload['city'],
             },
             'shipmentinfo': {
                 'pieces': 1,
-                'weight': int(round(payload['weight'])) or 1,
+                'weightinkg': float(payload['weight']) or 1.0,
                 'codamount': int(round(payload['cod_amount'])),
+                'servicecode': self.carrier.tcs_service_code,
                 'productdetail': payload['products'] or order.name,
                 'reference': payload['reference'],
             },

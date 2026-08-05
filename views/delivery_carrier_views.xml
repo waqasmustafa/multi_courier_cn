@@ -16,6 +16,7 @@
                     <field name="tcs_cost_center"/>
                     <field name="tcs_client_id"/>
                     <field name="tcs_account_number"/>
+                    <field name="tcs_service_code"/>
                     <field name="tcs_api_url"/>
                 </group>
                 <group string="Zoom Configuration" invisible="delivery_type != 'zoomcod'">
