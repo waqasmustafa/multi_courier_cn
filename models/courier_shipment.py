@@ -47,10 +47,18 @@ class CourierShipment(models.Model):
             if line.product_id.type != 'service'
         )
         products_desc = ', '.join(product_lines.mapped('product_id.name'))
+        # Delivery addresses are often child contacts without their own phone -
+        # fall back to the order's main contact, then the top-level company contact.
+        phone = (
+            partner.phone or partner.mobile
+            or order.partner_id.phone or order.partner_id.mobile
+            or partner.commercial_partner_id.phone or partner.commercial_partner_id.mobile
+            or ''
+        )
         return {
             'order': order,
             'customer_name': partner.name or '',
-            'phone': partner.phone or partner.mobile or '',
+            'phone': phone,
             'address': ', '.join(filter(None, [partner.street, partner.street2])),
             'city': partner.city or '',
             'products': products_desc,
