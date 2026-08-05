@@ -55,7 +55,7 @@ class TcsService(BaseCourierService):
             'tcsaccount': self.carrier.tcs_account_number,
             'costcentercode': self.carrier.tcs_cost_center,
             'clientid': self.carrier.tcs_client_id,
-            'countrycode': company.country_id.code or 'PK',
+            'countrycode': 'PAK',
             'countryname': company.country_id.name or 'Pakistan',
         }
 
@@ -87,11 +87,13 @@ class TcsService(BaseCourierService):
         if not resp.ok:
             raise CourierAPIError(_('TCS booking failed: %s') % data)
         tracking_number = self._extract(
-            data, ['consignmentnumber', 'trackingNumber', 'cnNumber', 'consignmentNumber', 'cn_no'])
+            data, ['consignmentNo', 'consignmentnumber', 'trackingNumber', 'cnNumber', 'consignmentNumber', 'cn_no'])
         if not tracking_number:
+            message = data.get('message') if isinstance(data, dict) else None
             raise CourierAPIError(
-                _('TCS did not return a recognisable tracking number. Check the API log '
-                  'for the raw response and adjust services/tcs.py field mapping: %s') % data)
+                (_('TCS booking failed: %s') % message) if message else
+                (_('TCS did not return a recognisable tracking number. Check the API log '
+                   'for the raw response and adjust services/tcs.py field mapping: %s') % data))
         slip_url = self._extract(data, ['slipurl', 'slipUrl', 'labelUrl', 'invoiceUrl', 'printUrl', 'consignmentcopy'])
         return {'tracking_number': tracking_number, 'slip_url': slip_url, 'raw_response': data}
 
