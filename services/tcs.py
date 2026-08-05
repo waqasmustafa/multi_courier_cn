@@ -1,6 +1,18 @@
+import re
+
 from odoo import _
 
 from .base import BaseCourierService, CourierAPIError
+
+
+def _sanitize_phone(phone):
+    """TCS rejects phone numbers with spaces/dashes/+92 - normalise to local 03xxxxxxxxx."""
+    digits = re.sub(r'\D', '', phone or '')
+    if digits.startswith('0092'):
+        digits = '0' + digits[4:]
+    elif digits.startswith('92') and len(digits) == 12:
+        digits = '0' + digits[2:]
+    return digits
 
 
 class TcsService(BaseCourierService):
@@ -37,7 +49,7 @@ class TcsService(BaseCourierService):
         company = self.carrier.env.company
         return {
             'shippername': company.name or '',
-            'mobile': company.phone or company.mobile or '',
+            'mobile': _sanitize_phone(company.phone or company.mobile),
             'address1': company.street or '',
             'cityname': company.city or '',
             'tcsaccount': self.carrier.tcs_account_number,
@@ -57,7 +69,7 @@ class TcsService(BaseCourierService):
             'shipperinfo': self._shipper_info(),
             'consigneeinfo': {
                 'firstname': payload['customer_name'] or 'Customer',
-                'mobile': payload['phone'],
+                'mobile': _sanitize_phone(payload['phone']),
                 'address1': payload['address'],
                 'cityname': payload['city'],
             },
