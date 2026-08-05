@@ -36,20 +36,31 @@ class TcsService(BaseCourierService):
     def book(self, payload, shipment=None):
         order = payload['order']
         url = '%s/ecom/api/booking/create' % self.carrier.tcs_api_url.rstrip('/')
+        # TCS expects three nested objects rather than flat fields - confirmed from a
+        # live "field is required" error response. Sub-field names inside each object
+        # are a best-guess following TCS's observed lowercase-no-camelCase convention
+        # (e.g. consignmentnumber, accesstoken) and may need one more round of
+        # correction from the next live error response.
         body = {
             'accesstoken': self.carrier.tcs_access_token,
-            'costCenterCode': self.carrier.tcs_cost_center,
-            'clientId': self.carrier.tcs_client_id,
-            'accountNumber': self.carrier.tcs_account_number,
-            'consigneeName': payload['customer_name'],
-            'consigneePhone': payload['phone'],
-            'consigneeAddress': payload['address'],
-            'consigneeCity': payload['city'],
-            'codAmount': payload['cod_amount'],
-            'pieces': 1,
-            'weight': payload['weight'],
-            'productDetail': payload['products'] or order.name,
-            'reference': payload['reference'],
+            'shipperinfo': {
+                'accountnumber': self.carrier.tcs_account_number,
+                'costcentercode': self.carrier.tcs_cost_center,
+                'clientid': self.carrier.tcs_client_id,
+            },
+            'consigneeinfo': {
+                'consigneename': payload['customer_name'],
+                'consigneephone': payload['phone'],
+                'consigneeaddress': payload['address'],
+                'consigneecity': payload['city'],
+            },
+            'shipmentinfo': {
+                'pieces': 1,
+                'weight': payload['weight'],
+                'codamount': payload['cod_amount'],
+                'productdetail': payload['products'] or order.name,
+                'reference': payload['reference'],
+            },
         }
         resp, data = self._request(
             'POST', url, shipment=shipment, action='book', headers=self._headers(), json_body=body)
@@ -61,7 +72,7 @@ class TcsService(BaseCourierService):
             raise CourierAPIError(
                 _('TCS did not return a recognisable tracking number. Check the API log '
                   'for the raw response and adjust services/tcs.py field mapping: %s') % data)
-        slip_url = self._extract(data, ['slipUrl', 'labelUrl', 'invoiceUrl', 'printUrl'])
+        slip_url = self._extract(data, ['slipurl', 'slipUrl', 'labelUrl', 'invoiceUrl', 'printUrl', 'consignmentcopy'])
         return {'tracking_number': tracking_number, 'slip_url': slip_url, 'raw_response': data}
 
     def cancel(self, tracking_number, shipment=None):
