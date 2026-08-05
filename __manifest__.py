@@ -17,6 +17,7 @@ and a per-order shipment history.
     'data': [
         'security/ir.model.access.csv',
         'data/ir_sequence_data.xml',
+        'data/delivery_carrier_data.xml',
         'views/delivery_carrier_views.xml',
         'views/sale_order_views.xml',
         'views/courier_shipment_views.xml',
