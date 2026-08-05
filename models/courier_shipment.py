@@ -74,6 +74,18 @@ class CourierShipment(models.Model):
             raise UserError(_('This shipment is already booked.'))
         service = self.carrier_id._get_courier_service()
         payload = self._build_booking_payload()
+        missing = []
+        if not payload['phone']:
+            missing.append(_('Phone number'))
+        if not payload['address']:
+            missing.append(_('Address'))
+        if not payload['city']:
+            missing.append(_('City'))
+        if missing:
+            raise UserError(_(
+                'Cannot generate CN: the customer is missing %s. '
+                'Add it on the customer or delivery address and try again.'
+            ) % ', '.join(missing))
         try:
             result = service.book(payload, shipment=self)
         except Exception as e:  # noqa: BLE001 - convert any adapter/network failure into a visible state
