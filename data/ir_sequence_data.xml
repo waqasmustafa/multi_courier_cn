@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_courier_shipment" model="ir.sequence">
+        <field name="name">Courier Shipment</field>
+        <field name="code">courier.shipment</field>
+        <field name="prefix">SH/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_courier" model="ir.ui.view">
+        <field name="name">sale.order.form.courier.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <button name="action_confirm" position="after">
+                <button name="action_generate_cn" type="object" string="Generate CN"
+                        class="btn-primary"
+                        invisible="not carrier_id or courier_state == 'booked'"/>
+                <button name="action_delete_cn" type="object" string="Delete CN"
+                        confirm="Cancel this CN with the courier?"
+                        invisible="courier_state != 'booked'"/>
+                <button name="action_print_cn" type="object" string="Print CN"
+                        invisible="courier_state != 'booked'"/>
+            </button>
+
+            <div name="button_box" position="inside">
+                <button name="action_view_shipments" type="object" class="oe_stat_button" icon="fa-truck"
+                        invisible="shipment_count == 0">
+                    <field name="shipment_count" widget="statinfo" string="Courier Shipment"/>
+                </button>
+            </div>
+
+            <notebook position="inside">
+                <page string="Courier" name="courier_info">
+                    <group>
+                        <group string="Shipping">
+                            <field name="carrier_id" string="Shipping Method"/>
+                        </group>
+                        <group string="Status" invisible="not active_shipment_id">
+                            <field name="courier_state"/>
+                            <field name="courier_tracking_number"/>
+                            <field name="courier_slip_url" widget="url"/>
+                        </group>
+                    </group>
+                    <field name="shipment_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="carrier_id"/>
+                            <field name="tracking_number"/>
+                            <field name="state"/>
+                            <field name="create_date"/>
+                            <field name="last_sync"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+
+        </field>
+    </record>
+</odoo>

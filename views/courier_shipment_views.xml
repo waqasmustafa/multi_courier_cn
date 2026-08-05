@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_courier_shipment_list" model="ir.ui.view">
+        <field name="name">courier.shipment.list</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="sale_order_id"/>
+                <field name="carrier_id"/>
+                <field name="tracking_number"/>
+                <field name="state" decoration-success="state == 'booked'"
+                       decoration-danger="state == 'failed'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="create_date"/>
+                <field name="last_sync"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_courier_shipment_form" model="ir.ui.view">
+        <field name="name">courier.shipment.form</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_book" type="object" string="Book"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_cancel_shipment" type="object" string="Cancel"
+                            invisible="state != 'booked'"/>
+                    <button name="action_print_slip" type="object" string="Print Slip"
+                            invisible="state != 'booked'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,booked,cancelled,failed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sale_order_id"/>
+                            <field name="carrier_id"/>
+                            <field name="tracking_number"/>
+                            <field name="slip_url" widget="url"/>
+                        </group>
+                        <group>
+                            <field name="cod_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="create_date"/>
+                            <field name="last_sync"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="API Logs" name="api_logs">
+                            <field name="log_ids" readonly="1">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="action"/>
+                                    <field name="endpoint"/>
+                                    <field name="status_code"/>
+                                    <field name="success" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Last Response" name="last_response">
+                            <field name="last_response" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_courier_shipment_log_form" model="ir.ui.view">
+        <field name="name">courier.shipment.log.form</field>
+        <field name="model">courier.shipment.log</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="shipment_id"/>
+                        <field name="action"/>
+                        <field name="endpoint"/>
+                        <field name="status_code"/>
+                        <field name="success"/>
+                    </group>
+                    <group string="Request">
+                        <field name="request" nolabel="1"/>
+                    </group>
+                    <group string="Response">
+                        <field name="response" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_courier_shipment" model="ir.actions.act_window">
+        <field name="name">Courier Shipments</field>
+        <field name="res_model">courier.shipment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_courier_shipment_root" name="Courier Shipments"
+              parent="sale.sale_menu_root" action="action_courier_shipment" sequence="90"/>
+</odoo>
