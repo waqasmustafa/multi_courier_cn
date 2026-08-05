@@ -56,8 +56,8 @@ class TcsService(BaseCourierService):
             },
             'shipmentinfo': {
                 'pieces': 1,
-                'weight': payload['weight'],
-                'codamount': payload['cod_amount'],
+                'weight': int(round(payload['weight'])) or 1,
+                'codamount': int(round(payload['cod_amount'])),
                 'productdetail': payload['products'] or order.name,
                 'reference': payload['reference'],
             },
