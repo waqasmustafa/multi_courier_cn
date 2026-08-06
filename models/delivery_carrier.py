@@ -26,7 +26,13 @@ class DeliveryCarrier(models.Model):
     tcs_cost_center = fields.Char(string='TCS Cost Center')
     tcs_client_id = fields.Char(string='TCS Client ID')
     tcs_account_number = fields.Char(string='TCS Account Number', help='This is the "tcsaccount" value TCS gave you (e.g. LGC1251).')
-    tcs_service_code = fields.Char(string='TCS Service Code', help='Provided by TCS for your account, required by the booking API (shipmentinfo.servicecode).')
+    tcs_service_code = fields.Selection([
+        ('Overnight', 'Overnight'),
+        ('2ND DAY/DETAIN', '2ND DAY/DETAIN'),
+        ('SAME DAY', 'SAME DAY'),
+        ('OVER LAND', 'OVER LAND'),
+    ], string='TCS Service', default='Overnight',
+        help='Required by the booking API (shipmentinfo.servicecode). Matches the service options TCS exposes.')
     tcs_api_url = fields.Char(string='TCS API URL', default='https://ociconnect.tcscourier.com')
 
     # ZoomCOD
