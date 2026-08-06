@@ -27,7 +27,6 @@
                         <tr>
                             <td colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center; vertical-align: middle;">
                                 <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 45px; max-width: 100%;"/>
-                                <div style="font-weight: bold; font-size: 16px;" t-esc="company.name"/>
                             </td>
                             <td colspan="4" style="border: 1px solid #000; padding: 6px; text-align: center; vertical-align: middle;">
                                 <img t-if="o.tracking_number"
@@ -51,7 +50,7 @@
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Shipper</td>
                             <td style="border: 1px solid #000; padding: 6px; width: 37.5%;" t-esc="company.name"/>
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Consignee</td>
-                            <td colspan="3" style="border: 1px solid #000; padding: 6px; width: 37.5%;" t-esc="partner.name"/>
+                            <td colspan="5" style="border: 1px solid #000; padding: 6px;" t-esc="partner.name"/>
                         </tr>
                         <tr>
                             <td colspan="2" style="border: 1px solid #000; padding: 6px;">
@@ -59,7 +58,7 @@
                                 <span t-esc="company.phone"/>
                                 <span t-if="company.email"> / <t t-esc="company.email"/></span>
                             </td>
-                            <td colspan="4" style="border: 1px solid #000; padding: 6px;">
+                            <td colspan="6" style="border: 1px solid #000; padding: 6px;">
                                 <span t-esc="', '.join(filter(None, [partner.street, partner.street2, partner.city]))"/><br/>
                                 <span t-esc="partner.phone or partner.mobile"/>
                             </td>
