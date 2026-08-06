@@ -26,7 +26,7 @@ class ZoomService(BaseCourierService):
             'product': carrier.zoom_product or 'Overnight',
             'service_type': carrier.zoom_service_type or 'Regular',
             'origin': (carrier.env.company.city or '').upper(),
-            'destination': (payload['city'] or '').upper(),
+            'destination': payload['city'] or '',
             'receiver_name': payload['customer_name'],
             'receiver_phone': payload['phone'],
             'receiver_email': payload.get('email') or '',
