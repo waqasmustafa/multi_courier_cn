@@ -9,10 +9,7 @@
             <button name="action_confirm" position="after">
                 <button name="action_generate_cn" type="object" string="Generate CN"
                         class="btn-primary"
-                        invisible="not carrier_id or courier_state == 'booked'"/>
-                <button name="action_delete_cn" type="object" string="Delete CN"
-                        confirm="Cancel this CN with the courier?"
-                        invisible="courier_state != 'booked'"/>
+                        invisible="courier_state == 'booked'"/>
                 <button name="action_print_cn" type="object" string="Print CN"
                         invisible="courier_state != 'booked'"/>
             </button>

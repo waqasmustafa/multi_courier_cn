@@ -26,25 +26,15 @@ class SaleOrder(models.Model):
 
     def action_generate_cn(self):
         self.ensure_one()
-        if not self.carrier_id:
-            raise UserError(_('Please select a Shipping Method (Courier tab) before generating a CN.'))
         if self.active_shipment_id and self.active_shipment_id.state == 'booked':
-            raise UserError(_('A CN is already booked for this order. Delete it before generating a new one.'))
-        shipment = self.env['courier.shipment'].create({
-            'sale_order_id': self.id,
-            'carrier_id': self.carrier_id.id,
-            'cod_amount': self.amount_total,
-        })
-        shipment.action_book()
-        return True
-
-    def action_delete_cn(self):
-        self.ensure_one()
-        shipment = self.active_shipment_id
-        if not shipment or shipment.state != 'booked':
-            raise UserError(_('There is no booked CN to delete for this order.'))
-        shipment.action_cancel_shipment()
-        return True
+            raise UserError(_('A CN is already booked for this order.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'courier.generate.cn.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_sale_order_id': self.id},
+        }
 
     def action_print_cn(self):
         self.ensure_one()
