@@ -24,6 +24,8 @@ class CourierShipment(models.Model):
     cod_amount = fields.Monetary(string='COD Amount')
     weight = fields.Float(string='Weight (kg)')
     items = fields.Integer(string='# of Items')
+    fragile = fields.Boolean(string='Fragile')
+    remarks = fields.Char(string='Remarks')
     currency_id = fields.Many2one(related='sale_order_id.currency_id')
     last_response = fields.Text(string='Last Response', copy=False)
     last_sync = fields.Datetime(string='Last Sync', copy=False)

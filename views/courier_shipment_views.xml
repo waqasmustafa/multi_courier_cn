@@ -46,6 +46,8 @@
                         <group>
                             <field name="cod_amount"/>
                             <field name="currency_id" invisible="1"/>
+                            <field name="fragile"/>
+                            <field name="remarks"/>
                             <field name="create_date"/>
                             <field name="last_sync"/>
                         </group>
