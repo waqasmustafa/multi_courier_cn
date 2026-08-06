@@ -5,12 +5,12 @@ class ManualService(BaseCourierService):
     """
     Manual / No API couriers (e.g. Self Pickup, a named rider, Bykea) - matches the
     old CRM's fallback: CN = first 3 letters of the courier's name (uppercase) + the
-    order's ID. No real network call is made.
+    order's own reference number (e.g. S00014). No real network call is made.
     """
 
     def _generate_cn(self, order):
         prefix = (self.carrier.name or 'CN')[:3].upper()
-        return '%s%s' % (prefix, order.id)
+        return '%s%s' % (prefix, order.name)
 
     def book(self, payload, shipment=None):
         order = payload['order']
