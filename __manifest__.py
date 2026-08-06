@@ -1,5 +1,5 @@
 {
-    'name': 'Multi Courier CN (PostEx, TCS, ZoomCOD, Daewoo)',
+    'name': 'Multi Courier CN (PostEx, TCS, ZoomCOD, Daewoo, Leopards Courier)',
     'version': '18.0.1.0.0',
     'category': 'Inventory/Delivery',
     'summary': 'Generate, print and cancel courier consignment notes (CN) from Sale Orders for PostEx, TCS, ZoomCOD and Daewoo.',

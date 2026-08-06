@@ -2,10 +2,10 @@ from . import models
 
 
 def post_init_hook(env):
-    """Create default PostEx/TCS/ZoomCOD/Daewoo delivery methods, mirroring how core
-    delivery modules (e.g. FedEx) ship ready-made carrier records."""
+    """Create default PostEx/TCS/ZoomCOD/Daewoo/Leopard delivery methods, mirroring how
+    core delivery modules (e.g. FedEx) ship ready-made carrier records."""
     Carrier = env['delivery.carrier']
-    if Carrier.search([('delivery_type', 'in', ['postex', 'tcs', 'zoomcod', 'daewoo'])], limit=1):
+    if Carrier.search([('delivery_type', 'in', ['postex', 'tcs', 'zoomcod', 'daewoo', 'leopard'])], limit=1):
         return
 
     Product = env['product.template']
@@ -29,4 +29,5 @@ def post_init_hook(env):
         {'name': 'TCS', 'delivery_type': 'tcs', 'product_id': product_variant_id},
         {'name': 'ZoomCOD', 'delivery_type': 'zoomcod', 'product_id': product_variant_id},
         {'name': 'Daewoo', 'delivery_type': 'daewoo', 'product_id': product_variant_id},
+        {'name': 'Leopards Courier', 'delivery_type': 'leopard', 'product_id': product_variant_id},
     ])

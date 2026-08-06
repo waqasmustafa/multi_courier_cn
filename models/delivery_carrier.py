@@ -1,7 +1,7 @@
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-COURIER_TYPES = ('postex', 'tcs', 'zoomcod', 'daewoo')
+COURIER_TYPES = ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard')
 
 
 class DeliveryCarrier(models.Model):
@@ -13,8 +13,12 @@ class DeliveryCarrier(models.Model):
             ('tcs', 'TCS'),
             ('zoomcod', 'ZoomCOD'),
             ('daewoo', 'Daewoo'),
+            ('leopard', 'Leopards Courier'),
         ],
-        ondelete={'postex': 'set default', 'tcs': 'set default', 'zoomcod': 'set default', 'daewoo': 'set default'},
+        ondelete={
+            'postex': 'set default', 'tcs': 'set default', 'zoomcod': 'set default',
+            'daewoo': 'set default', 'leopard': 'set default',
+        },
     )
 
     # PostEx
@@ -50,6 +54,16 @@ class DeliveryCarrier(models.Model):
     daewoo_source_terminal_id = fields.Char(string='Daewoo Source Terminal ID', default='18', help='Your pickup terminal (default 18 = Lahore).')
     daewoo_api_url = fields.Char(string='Daewoo API URL', default='https://codapi.daewoo.net.pk')
 
+    # Leopards Courier
+    leopard_book_api_key = fields.Char(string='Leopard Book API Key', password=True)
+    leopard_book_api_password = fields.Char(string='Leopard Book API Password', password=True)
+    leopard_cancel_api_key = fields.Char(string='Leopard Cancel API Key', password=True,
+        help='Leopard uses a DIFFERENT key/password pair for cancelling than for booking.')
+    leopard_cancel_api_password = fields.Char(string='Leopard Cancel API Password', password=True)
+    leopard_shipment_id = fields.Char(string='Leopard Shipment ID', default='705134',
+        help='Account-specific value from Leopard. Confirm with Leopard support if bookings fail.')
+    leopard_api_url = fields.Char(string='Leopard API URL', default='https://merchantapi.leopardscourier.com')
+
     def _get_courier_service(self):
         self.ensure_one()
         if self.delivery_type == 'postex':
@@ -64,6 +78,9 @@ class DeliveryCarrier(models.Model):
         if self.delivery_type == 'daewoo':
             from ..services.daewoo import DaewooService
             return DaewooService(self)
+        if self.delivery_type == 'leopard':
+            from ..services.leopard import LeopardService
+            return LeopardService(self)
         raise UserError(_('%s is not a supported courier integration.') % (self.delivery_type or ''))
 
     def action_test_connection(self):
