@@ -1,49 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="report_courier_slip_document">
-        <t t-call="web.html_container">
+        <t t-call="web.basic_layout">
             <t t-foreach="docs" t-as="o">
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <h2>Consignment Note</h2>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <strong>Courier:</strong> <span t-field="o.carrier_id.name"/><br/>
-                                <strong>Tracking Number:</strong> <span t-field="o.tracking_number"/><br/>
-                                <strong>Order Reference:</strong> <span t-field="o.sale_order_id.name"/><br/>
-                                <strong>COD Amount:</strong> <span t-field="o.cod_amount"/>
-                            </div>
-                            <div class="col-6 text-center">
+                <t t-set="order" t-value="o.sale_order_id"/>
+                <t t-set="partner" t-value="order.partner_shipping_id or order.partner_id"/>
+                <t t-set="company" t-value="o.company_id"/>
+                <t t-set="product_lines" t-value="order.order_line.filtered(lambda l: l.product_id and not l.display_type)"/>
+                <div class="page" style="font-size: 12px;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center; vertical-align: middle;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 45px; max-width: 100%;"/>
+                                <div style="font-weight: bold; font-size: 16px;" t-esc="company.name"/>
+                            </td>
+                            <td colspan="4" style="border: 1px solid #000; padding: 6px; text-align: center; vertical-align: middle;">
                                 <img t-if="o.tracking_number"
-                                     t-att-src="'/report/barcode/Code128/%s?width=300&amp;height=80&amp;humanreadable=1' % o.tracking_number"
-                                     style="max-width: 100%;"/>
-                            </div>
-                        </div>
-                        <hr/>
-                        <h4>Consignee</h4>
-                        <p>
-                            <span t-field="o.sale_order_id.partner_shipping_id.name"/><br/>
-                            <span t-field="o.sale_order_id.partner_shipping_id.street"/><br/>
-                            <span t-field="o.sale_order_id.partner_shipping_id.city"/><br/>
-                            Phone: <span t-field="o.sale_order_id.partner_shipping_id.phone"/>
-                        </p>
-                        <h4>Products</h4>
-                        <table class="table table-sm o_main_table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th class="text-end">Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="o.sale_order_id.order_line.filtered(lambda l: l.product_id and not l.display_type)" t-as="line">
-                                    <td><span t-field="line.product_id.name"/></td>
-                                    <td class="text-end"><span t-field="line.product_uom_qty"/></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </t>
+                                     t-att-src="'/report/barcode/Code128/%s?width=350&amp;height=60&amp;humanreadable=1' % o.tracking_number"
+                                     style="max-width: 100%; max-height: 60px;"/>
+                            </td>
+                            <td colspan="2" style="border: 1px solid #000; padding: 0;">
+                                <table style="width: 100%; border-collapse: collapse; height: 100%;">
+                                    <tr>
+                                        <td style="padding: 4px; border-bottom: 1px solid #000; width: 50%;">Date</td>
+                                        <td style="padding: 4px; border-bottom: 1px solid #000; border-left: 1px solid #000;" t-esc="o.create_date and o.create_date.strftime('%d-%m-%y')"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px;">Destination</td>
+                                        <td style="padding: 4px; border-left: 1px solid #000;" t-esc="partner.city"/>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Shipper</td>
+                            <td style="border: 1px solid #000; padding: 6px; width: 37.5%;" t-esc="company.name"/>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Consignee</td>
+                            <td colspan="3" style="border: 1px solid #000; padding: 6px; width: 37.5%;" t-esc="partner.name"/>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #000; padding: 6px;">
+                                <span t-esc="', '.join(filter(None, [company.street, company.city]))"/><br/>
+                                <span t-esc="company.phone"/>
+                                <span t-if="company.email"> / <t t-esc="company.email"/></span>
+                            </td>
+                            <td colspan="4" style="border: 1px solid #000; padding: 6px;">
+                                <span t-esc="', '.join(filter(None, [partner.street, partner.street2, partner.city]))"/><br/>
+                                <span t-esc="partner.phone or partner.mobile"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">
+                                <em># of Items</em>
+                            </td>
+                            <td style="border: 1px solid #000; padding: 6px;" t-esc="o.items"/>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">Weight</td>
+                            <td style="border: 1px solid #000; padding: 6px;" t-esc="o.weight"/>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">Fragile</td>
+                            <td style="border: 1px solid #000; padding: 6px;">NO</td>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">COD Amount</td>
+                            <td style="border: 1px solid #000; padding: 6px;">
+                                <span t-esc="order.currency_id.symbol"/> <span t-esc="'%.0f' % o.cod_amount"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">ORDER ID</td>
+                            <td style="border: 1px solid #000; padding: 6px;" t-esc="order.name"/>
+                            <td colspan="2" style="border: 1px solid #000; padding: 6px; font-weight: bold;">Remarks</td>
+                            <td colspan="4" style="border: 1px solid #000; padding: 6px;" t-esc="o.carrier_id.name"/>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #000; padding: 6px; font-weight: bold;">Product Detail</td>
+                            <td colspan="6" style="border: 1px solid #000; padding: 6px;">
+                                <t t-esc="', '.join('%s X %s' % (line.product_id.name, int(line.product_uom_qty)) for line in product_lines)"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8" style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">
+                                Please do not open the parcel before payment.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </t>
         </t>
     </template>

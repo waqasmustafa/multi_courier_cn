@@ -22,6 +22,8 @@ class CourierShipment(models.Model):
         ('failed', 'Failed'),
     ], default='draft', copy=False, required=True)
     cod_amount = fields.Monetary(string='COD Amount')
+    weight = fields.Float(string='Weight (kg)')
+    items = fields.Integer(string='# of Items')
     currency_id = fields.Many2one(related='sale_order_id.currency_id')
     last_response = fields.Text(string='Last Response', copy=False)
     last_sync = fields.Datetime(string='Last Sync', copy=False)
@@ -104,6 +106,8 @@ class CourierShipment(models.Model):
             'slip_url': result.get('slip_url'),
             'last_response': result.get('raw_response'),
             'last_sync': fields.Datetime.now(),
+            'weight': payload['weight'],
+            'items': payload['items'],
         }
         self.write(vals)
         if result.get('slip_pdf_base64'):
@@ -136,18 +140,16 @@ class CourierShipment(models.Model):
 
     def action_print_slip(self):
         self.ensure_one()
-        if self.slip_attachment_id:
-            return {
-                'type': 'ir.actions.act_url',
-                'url': '/web/content/%s?download=true' % self.slip_attachment_id.id,
-                'target': 'new',
-            }
-        if self.slip_url:
-            return {
-                'type': 'ir.actions.act_url',
-                'url': self.slip_url,
-                'target': 'new',
-            }
-        # Some couriers (e.g. TCS) don't return a slip/label - fall back to our
-        # own printable CN with barcode, consignee and product details.
-        return self.env.ref('multi_courier_cn.action_report_courier_slip').report_action(self)
+        if self.state != 'booked':
+            raise UserError(_('No slip is available for this shipment.'))
+        # Always use our own CN slip design, the same for every courier -
+        # slip_url/slip_attachment_id (if the courier returned one) are kept on
+        # the record for reference only and are not used for printing.
+        # Open the PDF directly (act_url) instead of report_action()'s forced
+        # download, so the browser shows it inline with its own Print button.
+        report = self.env.ref('multi_courier_cn.action_report_courier_slip')
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/report/pdf/%s/%s' % (report.report_name, self.id),
+            'target': 'new',
+        }
