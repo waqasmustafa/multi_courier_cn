@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="paperformat_courier_slip" model="report.paperformat">
+        <field name="name">Courier Slip</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="margin_top">2</field>
+        <field name="margin_bottom">2</field>
+        <field name="margin_left">3</field>
+        <field name="margin_right">3</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
     <template id="report_courier_slip_document">
         <t t-call="web.basic_layout">
             <t t-foreach="docs" t-as="o">
@@ -7,8 +20,10 @@
                 <t t-set="partner" t-value="order.partner_shipping_id or order.partner_id"/>
                 <t t-set="company" t-value="o.company_id"/>
                 <t t-set="product_lines" t-value="order.order_line.filtered(lambda l: l.product_id and not l.display_type)"/>
-                <div class="page" style="font-size: 12px;">
-                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+                <t t-set="live_items" t-value="int(sum(product_lines.mapped('product_uom_qty')) or 1)"/>
+                <t t-set="live_weight" t-value="sum((l.product_id.weight or 0.0) * l.product_uom_qty for l in product_lines) or 1.0"/>
+                <div class="page" style="font-size: 12px; margin: 0; padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin: 0;">
                         <tr>
                             <td colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center; vertical-align: middle;">
                                 <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 45px; max-width: 100%;"/>
@@ -53,14 +68,14 @@
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">
                                 <em># of Items</em>
                             </td>
-                            <td style="border: 1px solid #000; padding: 6px;" t-esc="o.items"/>
+                            <td style="border: 1px solid #000; padding: 6px;" t-esc="live_items"/>
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">Weight</td>
-                            <td style="border: 1px solid #000; padding: 6px;" t-esc="o.weight"/>
+                            <td style="border: 1px solid #000; padding: 6px;" t-esc="live_weight"/>
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">Fragile</td>
-                            <td style="border: 1px solid #000; padding: 6px;">NO</td>
+                            <td style="border: 1px solid #000; padding: 6px;">YES</td>
                             <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">COD Amount</td>
                             <td style="border: 1px solid #000; padding: 6px;">
-                                <span t-esc="order.currency_id.symbol"/> <span t-esc="'%.0f' % o.cod_amount"/>
+                                <span t-esc="order.currency_id.symbol"/> <span t-esc="'%.0f' % order.amount_total"/>
                             </td>
                         </tr>
                         <tr>
@@ -93,6 +108,7 @@
         <field name="report_name">multi_courier_cn.report_courier_slip_document</field>
         <field name="report_file">multi_courier_cn.report_courier_slip_document</field>
         <field name="print_report_name">'CN - %s' % (object.tracking_number or object.name)</field>
+        <field name="paperformat_id" ref="paperformat_courier_slip"/>
         <field name="binding_model_id" ref="model_courier_shipment"/>
         <field name="binding_type">report</field>
     </record>
