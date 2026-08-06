@@ -20,6 +20,7 @@ and a per-order shipment history.
         'views/delivery_carrier_views.xml',
         'views/sale_order_views.xml',
         'views/courier_shipment_views.xml',
+        'report/courier_slip_report.xml',
     ],
     'installable': True,
     'application': False,

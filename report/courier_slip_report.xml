@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_courier_slip_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Consignment Note</h2>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>Courier:</strong> <span t-field="o.carrier_id.name"/><br/>
+                                <strong>Tracking Number:</strong> <span t-field="o.tracking_number"/><br/>
+                                <strong>Order Reference:</strong> <span t-field="o.sale_order_id.name"/><br/>
+                                <strong>COD Amount:</strong> <span t-field="o.cod_amount"/>
+                            </div>
+                            <div class="col-6 text-center">
+                                <img t-if="o.tracking_number"
+                                     t-att-src="'/report/barcode/Code128/%s?width=300&amp;height=80&amp;humanreadable=1' % o.tracking_number"
+                                     style="max-width: 100%;"/>
+                            </div>
+                        </div>
+                        <hr/>
+                        <h4>Consignee</h4>
+                        <p>
+                            <span t-field="o.sale_order_id.partner_shipping_id.name"/><br/>
+                            <span t-field="o.sale_order_id.partner_shipping_id.street"/><br/>
+                            <span t-field="o.sale_order_id.partner_shipping_id.city"/><br/>
+                            Phone: <span t-field="o.sale_order_id.partner_shipping_id.phone"/>
+                        </p>
+                        <h4>Products</h4>
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.sale_order_id.order_line.filtered(lambda l: l.product_id and not l.display_type)" t-as="line">
+                                    <td><span t-field="line.product_id.name"/></td>
+                                    <td class="text-end"><span t-field="line.product_uom_qty"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_courier_slip" model="ir.actions.report">
+        <field name="name">Courier Slip</field>
+        <field name="model">courier.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">multi_courier_cn.report_courier_slip_document</field>
+        <field name="report_file">multi_courier_cn.report_courier_slip_document</field>
+        <field name="print_report_name">'CN - %s' % (object.tracking_number or object.name)</field>
+        <field name="binding_model_id" ref="model_courier_shipment"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

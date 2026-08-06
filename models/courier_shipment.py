@@ -148,4 +148,6 @@ class CourierShipment(models.Model):
                 'url': self.slip_url,
                 'target': 'new',
             }
-        raise UserError(_('No slip is available for this shipment.'))
+        # Some couriers (e.g. TCS) don't return a slip/label - fall back to our
+        # own printable CN with barcode, consignee and product details.
+        return self.env.ref('multi_courier_cn.action_report_courier_slip').report_action(self)
