@@ -1,7 +1,7 @@
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-COURIER_TYPES = ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard')
+COURIER_TYPES = ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard', 'manual')
 
 
 class DeliveryCarrier(models.Model):
@@ -14,10 +14,11 @@ class DeliveryCarrier(models.Model):
             ('zoomcod', 'ZoomCOD'),
             ('daewoo', 'Daewoo'),
             ('leopard', 'Leopards Courier'),
+            ('manual', 'Manual / No API'),
         ],
         ondelete={
             'postex': 'set default', 'tcs': 'set default', 'zoomcod': 'set default',
-            'daewoo': 'set default', 'leopard': 'set default',
+            'daewoo': 'set default', 'leopard': 'set default', 'manual': 'set default',
         },
     )
 
@@ -81,12 +82,15 @@ class DeliveryCarrier(models.Model):
         if self.delivery_type == 'leopard':
             from ..services.leopard import LeopardService
             return LeopardService(self)
+        if self.delivery_type == 'manual':
+            from ..services.manual import ManualService
+            return ManualService(self)
         raise UserError(_('%s is not a supported courier integration.') % (self.delivery_type or ''))
 
     def action_test_connection(self):
         self.ensure_one()
         if self.delivery_type not in COURIER_TYPES:
-            raise UserError(_('Test Connection is only available for PostEx, TCS and ZoomCOD.'))
+            raise UserError(_('Test Connection is only available for the couriers this module supports.'))
         service = self._get_courier_service()
         try:
             success, message = service.test_connection()

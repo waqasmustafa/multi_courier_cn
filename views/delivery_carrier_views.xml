@@ -44,9 +44,16 @@
                     <field name="leopard_shipment_id"/>
                     <field name="leopard_api_url"/>
                 </group>
+                <group string="Manual Courier" invisible="delivery_type != 'manual'">
+                    <div colspan="2">
+                        No API is called. When Generate CN is used, the tracking number is created
+                        locally as the first 3 letters of this Delivery Method's name (uppercase)
+                        followed by the order's ID - e.g. "Self Pickup" produces SEL123.
+                    </div>
+                </group>
                 <button name="action_test_connection" type="object" string="Test Connection"
                         class="btn-secondary"
-                        invisible="delivery_type not in ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard')"/>
+                        invisible="delivery_type not in ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard', 'manual')"/>
             </field>
         </field>
     </record>

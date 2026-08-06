@@ -2,10 +2,12 @@ from . import models
 
 
 def post_init_hook(env):
-    """Create default PostEx/TCS/ZoomCOD/Daewoo/Leopard delivery methods, mirroring how
-    core delivery modules (e.g. FedEx) ship ready-made carrier records."""
+    """Create default PostEx/TCS/ZoomCOD/Daewoo/Leopard/manual delivery methods,
+    mirroring how core delivery modules (e.g. FedEx) ship ready-made carrier records."""
     Carrier = env['delivery.carrier']
-    if Carrier.search([('delivery_type', 'in', ['postex', 'tcs', 'zoomcod', 'daewoo', 'leopard'])], limit=1):
+    if Carrier.search(
+        [('delivery_type', 'in', ['postex', 'tcs', 'zoomcod', 'daewoo', 'leopard', 'manual'])], limit=1
+    ):
         return
 
     Product = env['product.template']
@@ -30,4 +32,7 @@ def post_init_hook(env):
         {'name': 'ZoomCOD', 'delivery_type': 'zoomcod', 'product_id': product_variant_id},
         {'name': 'Daewoo', 'delivery_type': 'daewoo', 'product_id': product_variant_id},
         {'name': 'Leopards Courier', 'delivery_type': 'leopard', 'product_id': product_variant_id},
+        {'name': 'Self Pickup', 'delivery_type': 'manual', 'product_id': product_variant_id},
+        {'name': 'Zeeshan', 'delivery_type': 'manual', 'product_id': product_variant_id},
+        {'name': 'Bykea', 'delivery_type': 'manual', 'product_id': product_variant_id},
     ])
