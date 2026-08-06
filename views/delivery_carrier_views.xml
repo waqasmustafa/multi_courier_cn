@@ -8,6 +8,7 @@
             <field name="delivery_type" position="after">
                 <group string="PostEx Configuration" invisible="delivery_type != 'postex'">
                     <field name="postex_token" password="True"/>
+                    <field name="postex_pickup_address_code"/>
                     <field name="postex_api_url"/>
                 </group>
                 <group string="TCS Configuration" invisible="delivery_type != 'tcs'">
@@ -16,16 +17,28 @@
                     <field name="tcs_cost_center"/>
                     <field name="tcs_client_id"/>
                     <field name="tcs_account_number"/>
+                    <field name="tcs_shipper_city_code"/>
                     <field name="tcs_service_code"/>
                     <field name="tcs_api_url"/>
                 </group>
                 <group string="Zoom Configuration" invisible="delivery_type != 'zoomcod'">
                     <field name="zoom_auth_key" password="True"/>
+                    <field name="zoom_client_code"/>
+                    <field name="zoom_profile_id"/>
+                    <field name="zoom_product"/>
+                    <field name="zoom_service_type"/>
                     <field name="zoom_api_url"/>
+                </group>
+                <group string="Daewoo Configuration" invisible="delivery_type != 'daewoo'">
+                    <field name="daewoo_api_key" password="True"/>
+                    <field name="daewoo_api_user"/>
+                    <field name="daewoo_api_password" password="True"/>
+                    <field name="daewoo_source_terminal_id"/>
+                    <field name="daewoo_api_url"/>
                 </group>
                 <button name="action_test_connection" type="object" string="Test Connection"
                         class="btn-secondary"
-                        invisible="delivery_type not in ('postex', 'tcs', 'zoomcod')"/>
+                        invisible="delivery_type not in ('postex', 'tcs', 'zoomcod', 'daewoo')"/>
             </field>
         </field>
     </record>

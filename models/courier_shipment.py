@@ -47,6 +47,7 @@ class CourierShipment(models.Model):
             if line.product_id.type != 'service'
         )
         products_desc = ', '.join(product_lines.mapped('product_id.name'))
+        items = sum(product_lines.mapped('product_uom_qty')) or 1
         # Delivery addresses are often child contacts without their own phone -
         # fall back to the order's main contact, then the top-level company contact.
         phone = (
@@ -59,9 +60,11 @@ class CourierShipment(models.Model):
             'order': order,
             'customer_name': partner.name or '',
             'phone': phone,
+            'email': partner.email or order.partner_id.email or '',
             'address': ', '.join(filter(None, [partner.street, partner.street2])),
             'city': partner.city or '',
             'products': products_desc,
+            'items': int(items),
             'weight': weight or 1.0,
             'amount': order.amount_total,
             'cod_amount': self.cod_amount or order.amount_total,

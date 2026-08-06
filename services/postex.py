@@ -18,27 +18,26 @@ class PostexService(BaseCourierService):
         }
 
     def book(self, payload, shipment=None):
-        order = payload['order']
         url = '%s/services/integration/api/order/v3/create-order' % self.carrier.postex_api_url.rstrip('/')
+        # Payload matches a confirmed-working production integration (see OrPrController.php).
         body = {
             'cityName': payload['city'],
             'customerName': payload['customer_name'],
             'customerPhone': payload['phone'],
             'deliveryAddress': payload['address'],
-            'invoiceDivision': 1,
+            'invoiceDivision': 0,
             'invoicePayment': payload['cod_amount'],
-            'items': 1,
-            'orderDetail': payload['products'] or order.name,
+            'items': payload.get('items') or 1,
             'orderRefNumber': payload['reference'],
             'orderType': 'Normal',
-            'transactionNotes': payload['reference'],
-            'weight': payload['weight'],
+            'pickupAddressCode': self.carrier.postex_pickup_address_code or '001',
         }
         resp, data = self._request(
             'POST', url, shipment=shipment, action='book',
             headers=self._headers('token'), json_body=body)
         if not isinstance(data, dict) or str(data.get('statusCode')) != '200':
-            raise CourierAPIError(_('PostEx booking failed: %s') % data)
+            message = data.get('statusMessage') if isinstance(data, dict) else data
+            raise CourierAPIError(_('PostEx booking failed: %s') % (message or data))
         dist = data.get('dist') or {}
         tracking_number = dist.get('trackingNumber')
         if not tracking_number:

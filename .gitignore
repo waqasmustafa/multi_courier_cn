@@ -1,0 +1,9 @@
+# Build artifacts
+__pycache__/
+*.pyc
+
+# Reference / working documents - not part of the module, and some contain
+# live production credentials (this is a public repo).
+*.xlsx
+*.pdf
+OrPrController.php

@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from odoo import _
 
@@ -22,11 +23,8 @@ class TcsService(BaseCourierService):
     Cancel: POST /ecom/api/booking/cancel
     Auth: header Authorization: Bearer <JWT> AND body field accesstoken (both required).
 
-    NOTE: TCS's exact booking response field names were not confirmed against a live
-    sandbox at build time - only the auth mechanism and endpoints were provided.
-    _extract() tries several common key names and always logs the raw response
-    (see courier.shipment > API Logs) so the mapping can be corrected quickly if the
-    real field name differs.
+    Payload structure below is copied from a confirmed-working production integration
+    (the merchant's previous Laravel CRM), not guessed - see OrPrController.php.
     """
 
     def _headers(self):
@@ -48,53 +46,64 @@ class TcsService(BaseCourierService):
     def _shipper_info(self):
         company = self.carrier.env.company
         return {
-            'shippername': company.name or '',
-            'mobile': _sanitize_phone(company.phone or company.mobile),
-            'address1': company.street or '',
-            'cityname': company.city or '',
             'tcsaccount': self.carrier.tcs_account_number,
-            'costcentercode': self.carrier.tcs_cost_center,
-            'clientid': self.carrier.tcs_client_id,
+            'shippername': company.name or '',
+            'address1': company.street or '',
             'countrycode': 'PK',
-            'countryname': company.country_id.name or 'Pakistan',
+            'countryname': 'Pakistan',
+            'citycode': self.carrier.tcs_shipper_city_code or '',
+            'cityname': company.city or '',
+            'mobile': _sanitize_phone(company.phone or company.mobile),
         }
 
     def book(self, payload, shipment=None):
         order = payload['order']
         url = '%s/ecom/api/booking/create' % self.carrier.tcs_api_url.rstrip('/')
-        # Field names below were confirmed field-by-field from TCS's own validation
-        # error responses (see courier.shipment > API Logs for the raw exchanges).
         body = {
             'accesstoken': self.carrier.tcs_access_token,
+            'consignmentno': '',
             'shipperinfo': self._shipper_info(),
             'consigneeinfo': {
                 'firstname': payload['customer_name'] or 'Customer',
-                'mobile': _sanitize_phone(payload['phone']),
                 'address1': payload['address'],
+                'countrycode': 'PK',
+                'countryname': 'Pakistan',
+                'citycode': '',
                 'cityname': payload['city'],
+                'email': payload.get('email') or '',
+                'mobile': _sanitize_phone(payload['phone']),
             },
             'shipmentinfo': {
-                'pieces': 1,
+                'costcentercode': self.carrier.tcs_cost_center,
+                'referenceno': payload['reference'],
+                'servicecode': self.carrier.tcs_service_code or 'O',
+                'shipmentdate': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                'shippingtype': '',
+                'currency': 'PKR',
+                'codamount': str(int(round(payload['cod_amount']))),
+                'declaredvalue': None,
+                'insuredvalue': None,
+                'transactiontype': '',
+                'dsflag': '',
+                'carrierslug': '',
                 'weightinkg': float(payload['weight']) or 1.0,
-                'codamount': int(round(payload['cod_amount'])),
-                'servicecode': self.carrier.tcs_service_code,
-                'productdetail': payload['products'] or order.name,
-                'reference': payload['reference'],
+                'pieces': payload.get('items') or 1,
+                'fragile': False,
+                'remarks': (payload['products'] or order.name)[:499],
             },
         }
         resp, data = self._request(
             'POST', url, shipment=shipment, action='book', headers=self._headers(), json_body=body)
-        if not resp.ok:
-            raise CourierAPIError(_('TCS booking failed: %s') % data)
-        tracking_number = self._extract(
-            data, ['consignmentNo', 'consignmentnumber', 'trackingNumber', 'cnNumber', 'consignmentNumber', 'cn_no'])
+        message = data.get('message') if isinstance(data, dict) else None
+        if message != 'SUCCESS':
+            if isinstance(data, dict) and data.get('errorList'):
+                message = data['errorList'][0].get('errormessage', message)
+            raise CourierAPIError(_('TCS booking failed: %s') % (message or data))
+        tracking_number = self._extract(data, ['consignmentNo', 'consignmentnumber'])
         if not tracking_number:
-            message = data.get('message') if isinstance(data, dict) else None
             raise CourierAPIError(
-                (_('TCS booking failed: %s') % message) if message else
-                (_('TCS did not return a recognisable tracking number. Check the API log '
-                   'for the raw response and adjust services/tcs.py field mapping: %s') % data))
-        slip_url = self._extract(data, ['slipurl', 'slipUrl', 'labelUrl', 'invoiceUrl', 'printUrl', 'consignmentcopy'])
+                _('TCS reported success but did not return a tracking number: %s') % data)
+        slip_url = self._extract(data, ['slipurl', 'slipUrl', 'labelUrl', 'invoiceUrl', 'printUrl'])
         return {'tracking_number': tracking_number, 'slip_url': slip_url, 'raw_response': data}
 
     def cancel(self, tracking_number, shipment=None):
@@ -102,8 +111,9 @@ class TcsService(BaseCourierService):
         body = {'accesstoken': self.carrier.tcs_access_token, 'consignmentnumber': tracking_number}
         resp, data = self._request(
             'POST', url, shipment=shipment, action='cancel', headers=self._headers(), json_body=body)
-        if not resp.ok:
-            raise CourierAPIError(_('TCS cancel failed: %s') % data)
+        if not isinstance(data, dict) or data.get('message') != 'SUCCESS':
+            message = data.get('message') if isinstance(data, dict) else data
+            raise CourierAPIError(_('TCS cancel failed: %s') % message)
         return {'raw_response': data}
 
     def test_connection(self):
