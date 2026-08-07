@@ -26,6 +26,11 @@ class SaleOrder(models.Model):
 
     def action_generate_cn(self):
         self.ensure_one()
+        # Some instances install a separate "sale_order_stage_management" module
+        # adding stage_id (sale.order.stage). If present, only allow CN generation
+        # once the order has reached the "Ready" stage.
+        if 'stage_id' in self._fields and self.stage_id and self.stage_id.name != 'Ready':
+            raise UserError(_('This order is not on the "Ready" stage yet.'))
         if self.active_shipment_id and self.active_shipment_id.state == 'booked':
             raise UserError(_('A CN is already booked for this order.'))
         return {
