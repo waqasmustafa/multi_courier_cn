@@ -54,6 +54,7 @@ class DeliveryCarrier(models.Model):
     daewoo_api_password = fields.Char(string='Daewoo API Password', password=True)
     daewoo_source_terminal_id = fields.Char(string='Daewoo Source Terminal ID', default='18', help='Your pickup terminal (default 18 = Lahore).')
     daewoo_api_url = fields.Char(string='Daewoo API URL', default='https://codapi.daewoo.net.pk')
+    daewoo_terminal_cache = fields.Text(string='Daewoo Terminal Cache (JSON)', help='Populated automatically from Daewoo\'s getLocations API. Use "Sync Terminal List" to refresh.')
 
     # Leopards Courier
     leopard_book_api_key = fields.Char(string='Leopard Book API Key', password=True)
@@ -86,6 +87,27 @@ class DeliveryCarrier(models.Model):
             from ..services.manual import ManualService
             return ManualService(self)
         raise UserError(_('%s is not a supported courier integration.') % (self.delivery_type or ''))
+
+    def action_sync_daewoo_terminals(self):
+        self.ensure_one()
+        if self.delivery_type != 'daewoo':
+            raise UserError(_('This is only available for Daewoo.'))
+        service = self._get_courier_service()
+        try:
+            terminal_map = service.sync_terminal_list()
+            success, message = True, _('Fetched %s terminals from Daewoo.') % len(terminal_map)
+        except Exception as e:  # noqa: BLE001
+            success, message = False, str(e)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Sync Successful') if success else _('Sync Failed'),
+                'message': message,
+                'type': 'success' if success else 'danger',
+                'sticky': not success,
+            },
+        }
 
     def action_test_connection(self):
         self.ensure_one()

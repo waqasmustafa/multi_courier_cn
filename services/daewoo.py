@@ -1,3 +1,5 @@
+import json
+
 from odoo import _
 
 from .base import BaseCourierService, CourierAPIError
@@ -71,25 +73,68 @@ class DaewooService(BaseCourierService):
             'apiPassword': self.carrier.daewoo_api_password,
         }
 
+    def fetch_terminal_list(self):
+        """Calls Daewoo's official getLocations API and returns {CITY_NAME: 'terminal_id'}."""
+        url = '%s/api/cargo/getLocations' % self.carrier.daewoo_api_url.rstrip('/')
+        resp, data = self._request('GET', url, action='sync_cities', params=self._auth_params())
+        success = isinstance(data, dict) and str(data.get('Success')).lower() == 'true'
+        if not success:
+            message = data.get('Response') if isinstance(data, dict) else data
+            raise CourierAPIError(_('Fetching Daewoo terminal list failed: %s') % (message or data))
+        terminal_map = {}
+        for row in (data.get('Data') or []):
+            name = (row.get('terminal_name') or '').strip().upper()
+            terminal_id = row.get('terminal_id')
+            if name and terminal_id is not None:
+                terminal_map[name] = str(terminal_id)
+        return terminal_map
+
+    def sync_terminal_list(self):
+        """Fetches the live terminal list from Daewoo and caches it on the carrier record."""
+        terminal_map = self.fetch_terminal_list()
+        self.carrier.daewoo_terminal_cache = json.dumps(terminal_map)
+        return terminal_map
+
+    def _cached_terminal_map(self):
+        raw = self.carrier.daewoo_terminal_cache
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except ValueError:
+            return None
+
     def _terminal_id(self, city):
         city_key = (city or '').strip().upper()
-        # 1) city itself is a known terminal with a confirmed numeric ID
+
+        # 1) Live list fetched from Daewoo's own getLocations API (authoritative, complete).
+        #    Fetched on first use and cached on the carrier record.
+        terminal_map = self._cached_terminal_map()
+        if terminal_map is None:
+            try:
+                terminal_map = self.sync_terminal_list()
+            except CourierAPIError:
+                terminal_map = {}
+        if city_key in terminal_map:
+            return terminal_map[city_key]
+
+        # 2) Fallback: hardcoded confirmed IDs, in case the live fetch is unavailable.
         terminal_id = TERMINAL_IDS.get(city_key)
         if terminal_id:
             return terminal_id
-        # 2) city routes through a known terminal group - use that group's ID if confirmed
         terminal_name = CITY_TO_TERMINAL.get(city_key)
         if terminal_name:
+            if terminal_name in terminal_map:
+                return terminal_map[terminal_name]
             terminal_id = TERMINAL_IDS.get(terminal_name)
             if terminal_id:
                 return terminal_id
             raise CourierAPIError(
                 _('"%s" routes via Daewoo terminal "%s", but that terminal\'s numeric ID is not '
-                  'confirmed yet. Please book this one manually or provide the terminal ID.')
-                % (city, terminal_name))
+                  'confirmed yet. Please book this one manually.') % (city, terminal_name))
         raise CourierAPIError(
-            _('No Daewoo terminal is configured for city "%s". Please book this one manually '
-              'or add its terminal mapping to services/daewoo.py.') % city)
+            _('No Daewoo terminal is configured for city "%s". Please book this one manually, '
+              'or use "Sync Terminal List" to refresh the list from Daewoo.') % city)
 
     def book(self, payload, shipment=None):
         url = '%s/api/booking/quickBook' % self.carrier.daewoo_api_url.rstrip('/')

@@ -54,6 +54,8 @@
                 <button name="action_test_connection" type="object" string="Test Connection"
                         class="btn-secondary"
                         invisible="delivery_type not in ('postex', 'tcs', 'zoomcod', 'daewoo', 'leopard', 'manual')"/>
+                <button name="action_sync_daewoo_terminals" type="object" string="Sync Terminal List"
+                        class="btn-secondary" invisible="delivery_type != 'daewoo'"/>
             </field>
         </field>
     </record>
