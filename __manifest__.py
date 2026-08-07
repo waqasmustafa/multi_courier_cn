@@ -45,7 +45,7 @@
     'website': 'https://www.linkedin.com/in/waqas-mustafa-ba5701209/',
     'support': 'mustafawaqas0@gmail.com',
 
-    'version': '18.0.1.0.0',
+    'version': '19.0.1.0.0',
     'license': 'LGPL-3',
     'category': 'Inventory/Delivery',
 
