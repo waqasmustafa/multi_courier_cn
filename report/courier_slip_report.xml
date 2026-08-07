@@ -48,9 +48,9 @@
                             </td>
                         </tr>
                         <tr>
-                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Shipper</td>
-                            <td style="border: 1px solid #000; padding: 6px; width: 37.5%;" t-esc="company.name"/>
-                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 12.5%;">Consignee</td>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 10%;">Shipper</td>
+                            <td style="border: 1px solid #000; padding: 6px; width: 30%;" t-esc="company.name"/>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 10%;">Consignee</td>
                             <td colspan="7" style="border: 1px solid #000; padding: 6px;" t-esc="partner.name"/>
                         </tr>
                         <tr>
