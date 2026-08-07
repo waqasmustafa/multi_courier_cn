@@ -1,6 +1,20 @@
+import json
+import subprocess
+from urllib.parse import urlencode
+
 from odoo import _
 
-from .base import BaseCourierService, CourierAPIError
+from .base import BaseCourierService, CourierAPIError, redact_text
+
+STATUS_MARKER = '__HTTP_STATUS__:'
+
+
+class _FakeResponse:
+    """Minimal stand-in for a requests.Response, just enough for status checks."""
+
+    def __init__(self, status_code):
+        self.status_code = status_code
+        self.ok = status_code is not None and 200 <= status_code < 300
 
 
 class ZoomService(BaseCourierService):
@@ -14,7 +28,52 @@ class ZoomService(BaseCourierService):
     code (Edentalmart-Courier-Code-Implementation.pdf). The production code never
     sends "profile_id" - it's optional (falls back to the account's default profile) -
     so we only include it if explicitly configured.
+
+    IMPORTANT: Zoom's server returns a 403 (serving its own login page) for requests
+    made with Python's requests/urllib3 - even with a spoofed User-Agent - while curl
+    from the exact same server/IP succeeds reliably every time (confirmed by repeated
+    live testing). This looks like a TLS-fingerprint-based check on their end that
+    only allows through clients that look like curl. Calls are therefore made by
+    shelling out to curl instead of the shared requests-based _request().
     """
+
+    def _curl_request(self, method, url, shipment=None, action='book', json_body=None, params=None):
+        full_url = url
+        if params:
+            full_url = '%s?%s' % (url, urlencode(params))
+        cmd = ['curl', '-s', '-S', '-X', method, full_url,
+               '-w', '\n%s%%{http_code}' % STATUS_MARKER, '--max-time', '20']
+        if json_body is not None:
+            cmd += ['-H', 'Content-Type: application/json', '-H', 'Accept: application/json',
+                    '-d', json.dumps(json_body)]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
+        except Exception as e:  # noqa: BLE001
+            self._log(shipment, action, full_url, request_data=redact_text(json_body or params),
+                       response_data=str(e), status_code=None, success=False)
+            raise CourierAPIError(_('Network error contacting Zoom: %s') % e)
+
+        output = result.stdout or ''
+        status_code = None
+        body_text = output
+        if STATUS_MARKER in output:
+            body_text, _sep, status_part = output.rpartition(STATUS_MARKER)
+            try:
+                status_code = int(status_part.strip())
+            except ValueError:
+                status_code = None
+        body_text = body_text.rstrip('\n')
+        try:
+            data = json.loads(body_text) if body_text else None
+        except ValueError:
+            data = body_text
+
+        resp = _FakeResponse(status_code)
+        self._log(shipment, action, full_url, request_data=redact_text(json_body or params),
+                   response_data=data, status_code=status_code, success=resp.ok)
+        if status_code is None:
+            raise CourierAPIError(_('Zoom did not return a response (curl error): %s') % result.stderr)
+        return resp, data
 
     def book(self, payload, shipment=None):
         order = payload['order']
@@ -40,7 +99,7 @@ class ZoomService(BaseCourierService):
         }
         if carrier.zoom_profile_id:
             body['profile_id'] = carrier.zoom_profile_id
-        resp, data = self._request('POST', url, shipment=shipment, action='book', json_body=body)
+        resp, data = self._curl_request('POST', url, shipment=shipment, action='book', json_body=body)
         tracking_number = data.get('tracking_no') if isinstance(data, dict) else None
         if not tracking_number:
             message = data.get('message') if isinstance(data, dict) else data
@@ -51,7 +110,7 @@ class ZoomService(BaseCourierService):
     def cancel(self, tracking_number, shipment=None):
         url = '%s/API/CancelOrder.php' % self.carrier.zoom_api_url.rstrip('/')
         params = {'auth_key': self.carrier.zoom_auth_key, 'tracking_no': tracking_number}
-        resp, data = self._request('GET', url, shipment=shipment, action='cancel', params=params)
+        resp, data = self._curl_request('GET', url, shipment=shipment, action='cancel', params=params)
         if not isinstance(data, dict) or data.get('response') != 1:
             message = data.get('message') if isinstance(data, dict) else data
             raise CourierAPIError(_('Zoom cancel failed: %s') % message)
@@ -63,7 +122,7 @@ class ZoomService(BaseCourierService):
         url = '%s/API/CancelOrder.php' % self.carrier.zoom_api_url.rstrip('/')
         params = {'auth_key': self.carrier.zoom_auth_key, 'tracking_no': 'TEST-CONNECTION'}
         try:
-            resp, data = self._request('GET', url, action='test', params=params)
+            resp, data = self._curl_request('GET', url, action='test', params=params)
         except CourierAPIError as e:
             return False, str(e)
         if resp.status_code in (401, 403):
